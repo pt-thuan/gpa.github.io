@@ -37,7 +37,12 @@
     .result {
       margin-top: 20px;
       font-weight: bold;
-      white-space: pre-wrap;
+    }
+    .options {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e7f5ff;
+      border-left: 5px solid #2d6a4f;
     }
   </style>
 </head>
@@ -45,8 +50,10 @@
 
   <h1>🎓 GPA Calculator</h1>
 
+  <p>Enter your current GPA, credits completed, remaining credits, and target GPA. This tool will tell you what GPA you need for the rest of your subjects and give you 5 optimal ways to reach it.</p>
+
   <label for="completedGPA">Your current GPA:</label>
-  <input type="number" id="completedGPA" placeholder="e.g. 3.2" step="0.01">
+  <input type="number" id="completedGPA" placeholder="e.g. 3.53" step="0.01">
 
   <label for="completedCredits">Credits completed:</label>
   <input type="number" id="completedCredits" placeholder="e.g. 102">
@@ -55,11 +62,12 @@
   <input type="number" id="remainingCredits" placeholder="e.g. 36">
 
   <label for="targetGPA">Expected GPA:</label>
-  <input type="number" id="targetGPA" placeholder="e.g. 3.6" step="0.01">
+  <input type="number" id="targetGPA" placeholder="e.g. 3.60" step="0.01">
 
   <button onclick="calculate()">Calculate Required GPA</button>
 
   <div class="result" id="output"></div>
+  <div class="options" id="options"></div>
 
   <script>
     function calculate() {
@@ -68,6 +76,8 @@
       const remainingCredits = parseFloat(document.getElementById("remainingCredits").value);
       const targetGPA = parseFloat(document.getElementById("targetGPA").value);
       const outputDiv = document.getElementById("output");
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
 
       if (isNaN(completedGPA) || isNaN(completedCredits) || isNaN(remainingCredits) || isNaN(targetGPA)) {
         outputDiv.innerText = "❗ Please fill in all fields with valid numbers.";
@@ -79,66 +89,82 @@
       const currentPoints = completedGPA * completedCredits;
       const requiredPoints = totalRequiredPoints - currentPoints;
       const requiredGPA = requiredPoints / remainingCredits;
-      const requiredGPAFormatted = requiredGPA.toFixed(2);
+      const requiredGPAFixed = requiredGPA.toFixed(2);
 
       if (requiredGPA > 4.0) {
-        outputDiv.innerText = `❌ It’s not possible to reach a GPA of ${targetGPA.toFixed(2)}. You would need an average GPA of ${requiredGPAFormatted}, which exceeds the maximum of 4.0.`;
+        outputDiv.innerText = `❌ You need a GPA of ${requiredGPAFixed}, which exceeds the maximum of 4.0. It's not possible to reach your target GPA.`;
         return;
       }
 
-      let result = `✅ You need to average at least GPA ${requiredGPAFormatted} in the remaining ${remainingCredits} credits.\n`;
+      outputDiv.innerText = `✅ You need an average GPA of ${requiredGPAFixed} in the remaining ${remainingCredits} credits to reach your target GPA of ${targetGPA.toFixed(2)}.`;
 
-      // Allocation logic
-      const gradeScale = {
+      // Grade to point mapping
+      const gradePoints = {
         "A+": 4.0,
         "A": 3.7,
-        "B+": 3.5,
+        "B+": 3.3,
         "B": 3.0
       };
 
-      const creditPerSubject = 3;
-      const numSubjects = Math.floor(remainingCredits / creditPerSubject);
-      let combinations = [];
+      const grades = Object.keys(gradePoints);
+      const numSubjects = remainingCredits / 3;
+      const results = [];
 
-      function backtrack(subjectsLeft, index, currentCombo, totalGPA) {
-        if (combinations.length >= 5) return;
-        if (subjectsLeft === 0) {
-          const avgGPA = totalGPA / numSubjects;
-          if (avgGPA >= requiredGPA - 0.001) {
-            combinations.push({ ...currentCombo });
+      function* generateCombos(grades, n) {
+        if (n === 0) yield {};
+        else {
+          for (let grade of grades) {
+            for (let combo of generateCombos(grades, n - 1)) {
+              combo = { ...combo };
+              combo[grade] = (combo[grade] || 0) + 1;
+              yield combo;
+            }
           }
-          return;
-        }
-
-        const grades = Object.entries(gradeScale);
-        for (let i = index; i < grades.length; i++) {
-          const [grade, value] = grades[i];
-          currentCombo[grade] = (currentCombo[grade] || 0) + 1;
-          backtrack(subjectsLeft - 1, i, currentCombo, totalGPA + value);
-          currentCombo[grade]--;
         }
       }
 
-      backtrack(numSubjects, 0, {}, 0);
-
-      if (combinations.length > 0) {
-        result += "\n🎯 Possible Grade Allocations:";
-        combinations.forEach((combo, i) => {
-  let line = `\nOption ${i + 1}: `;
-  const parts = [];
-  for (let [grade, count] of Object.entries(combo)) {
-    if (count > 0) {
-      parts.push(`${count} subject${count > 1 ? 's' : ''} with grade ${grade}`);
-    }
-  }
-  line += parts.join(" and ");
-  result += line;
-});
-      } else {
-        result += "\n⚠️ No valid grade combinations found.";
+      function* combinationsWithReplacement(grades, length) {
+        const indices = Array(length).fill(0);
+        while (true) {
+          yield indices.map(i => grades[i]);
+          let i = length - 1;
+          while (i >= 0 && indices[i] === grades.length - 1) i--;
+          if (i < 0) break;
+          indices[i]++;
+          for (let j = i + 1; j < length; j++) {
+            indices[j] = indices[i];
+          }
+        }
       }
 
-      outputDiv.innerText = result;
+      const seen = new Set();
+      for (let combo of combinationsWithReplacement(grades, numSubjects)) {
+        const counts = {};
+        let total = 0;
+        for (let grade of combo) {
+          counts[grade] = (counts[grade] || 0) + 1;
+          total += gradePoints[grade];
+        }
+        const avg = total / numSubjects;
+        const key = JSON.stringify(counts);
+        if (!seen.has(key) && avg >= requiredGPA) {
+          results.push({ avg, counts });
+          seen.add(key);
+        }
+      }
+
+      results.sort((a, b) => a.avg - b.avg);
+
+      const top5 = results.slice(0, 5);
+      const formatted = top5.map((r, i) => {
+        const parts = Object.entries(r.counts)
+          .sort((a, b) => gradePoints[b[0]] - gradePoints[a[0]])
+          .map(([grade, count]) => `${count} subject${count > 1 ? "s" : ""} with grade ${grade}`)
+          .join(" and ");
+        return `<p><strong>Option ${i + 1}:</strong> ${parts}</p>`;
+      });
+
+      optionsDiv.innerHTML = `<h3>🎯 Possible grade combinations to reach your goal:</h3>` + formatted.join("");
     }
   </script>
 
