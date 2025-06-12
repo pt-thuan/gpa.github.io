@@ -124,12 +124,16 @@
       if (combinations.length > 0) {
         result += "\n🎯 Possible Grade Allocations:";
         combinations.forEach((combo, i) => {
-          let line = `\nOption ${i + 1}: `;
-          for (let [grade, count] of Object.entries(combo)) {
-            if (count > 0) line += `${count} ${grade}  `;
-          }
-          result += line.trim();
-        });
+  let line = `\nOption ${i + 1}: `;
+  const parts = [];
+  for (let [grade, count] of Object.entries(combo)) {
+    if (count > 0) {
+      parts.push(`${count} subject${count > 1 ? 's' : ''} with grade ${grade}`);
+    }
+  }
+  line += parts.join(" and ");
+  result += line;
+});
       } else {
         result += "\n⚠️ No valid grade combinations found.";
       }
