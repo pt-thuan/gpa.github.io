@@ -8,14 +8,11 @@
       background-color: #f0f4f8;
       font-family: Arial, sans-serif;
       color: #333;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #2d6a4f;
     }
     input, button {
       width: 100%;
@@ -38,66 +35,108 @@
       margin-top: 20px;
       font-weight: bold;
     }
-    footer {
-      margin-top: 40px;
-      font-size: 14px;
-      text-align: center;
+    .combo {
+      background: #e0f7e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h1>🎓 GPA Calculator</h1>
+<h1>🎓 GPA Calculator + Grade Allocation</h1>
 
-  <p>Enter the grades and credits of subjects you've already completed. Then enter how many credits remain and your expected GPA. The tool will tell you what average grade you need for the remaining subjects.</p>
+<p>Enter your current GPA and credit information. The tool will calculate what GPA you need and show up to 5 ways to allocate your grades (A+, A, B+, etc.) to reach your goal.</p>
 
-  <label for="completedGPA">Your current GPA:</label>
-  <input type="number" id="completedGPA" placeholder="e.g. 3.2" step="0.01">
+<label>Current GPA:</label>
+<input type="number" id="completedGPA" step="0.01">
 
-  <label for="completedCredits">Credits completed:</label>
-  <input type="number" id="completedCredits" placeholder="e.g. 80">
+<label>Credits Completed:</label>
+<input type="number" id="completedCredits">
 
-  <label for="remainingCredits">Remaining credits:</label>
-  <input type="number" id="remainingCredits" placeholder="e.g. 40">
+<label>Remaining Credits:</label>
+<input type="number" id="remainingCredits">
 
-  <label for="targetGPA">Expected GPA:</label>
-  <input type="number" id="targetGPA" placeholder="e.g. 3.5" step="0.01">
+<label>Target GPA:</label>
+<input type="number" id="targetGPA" step="0.01">
 
-  <button onclick="calculate()">Calculate Required GPA</button>
+<button onclick="calculate()">Calculate</button>
 
-  <div class="result" id="output"></div>
+<div class="result" id="output"></div>
 
-  <script>
-    function calculate() {
-      const completedGPA = parseFloat(document.getElementById("completedGPA").value);
-      const completedCredits = parseFloat(document.getElementById("completedCredits").value);
-      const remainingCredits = parseFloat(document.getElementById("remainingCredits").value);
-      const targetGPA = parseFloat(document.getElementById("targetGPA").value);
+<script>
+  const gradeOptions = [
+    { grade: "A+", gpa: 4.0 },
+    { grade: "A", gpa: 3.7 },
+    { grade: "B+", gpa: 3.5 },
+    { grade: "B", gpa: 3.0 },
+    { grade: "C+", gpa: 2.5 },
+    { grade: "C", gpa: 2.0 },
+    { grade: "D+", gpa: 1.5 },
+    { grade: "D", gpa: 1.0 }
+  ];
 
-      if (isNaN(completedGPA) || isNaN(completedCredits) || isNaN(remainingCredits) || isNaN(targetGPA)) {
-        document.getElementById("output").innerText = "❗ Please fill in all fields with valid numbers.";
+  function calculate() {
+    const completedGPA = parseFloat(document.getElementById("completedGPA").value);
+    const completedCredits = parseFloat(document.getElementById("completedCredits").value);
+    const remainingCredits = parseFloat(document.getElementById("remainingCredits").value);
+    const targetGPA = parseFloat(document.getElementById("targetGPA").value);
+
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = "";
+
+    if (isNaN(completedGPA) || isNaN(completedCredits) || isNaN(remainingCredits) || isNaN(targetGPA)) {
+      outputDiv.textContent = "❗ Please fill in all fields with valid numbers.";
+      return;
+    }
+
+    const totalCredits = completedCredits + remainingCredits;
+    const totalRequiredPoints = targetGPA * totalCredits;
+    const currentPoints = completedGPA * completedCredits;
+    const requiredPoints = totalRequiredPoints - currentPoints;
+    const requiredGPA = requiredPoints / remainingCredits;
+
+    outputDiv.innerHTML += `<p>🎯 You need an average GPA of <strong>${requiredGPA.toFixed(3)}</strong> in the next ${remainingCredits} credits.</p>`;
+
+    if (requiredGPA > 4.0) {
+      outputDiv.innerHTML += `<p>❌ It's not possible to reach the target GPA with the remaining credits.</p>`;
+      return;
+    }
+
+    const numSubjects = remainingCredits / 3;
+    const results = [];
+
+    function search(combo = [], sum = 0, depth = 0) {
+      if (depth === numSubjects) {
+        const avg = sum / numSubjects;
+        if (avg >= requiredGPA && results.length < 5) {
+          const count = {};
+          combo.forEach(g => count[g] = (count[g] || 0) + 1);
+          results.push(count);
+        }
         return;
       }
 
-      const totalCredits = completedCredits + remainingCredits;
-      const totalRequiredPoints = targetGPA * totalCredits;
-      const currentPoints = completedGPA * completedCredits;
-      const requiredPoints = totalRequiredPoints - currentPoints;
-      const requiredGPA = requiredPoints / remainingCredits;
-
-      let message = "";
-
-      if (requiredGPA > 4.0) {
-        message = `❌ It’s not possible to reach a GPA of ${targetGPA.toFixed(2)}. You would need an average GPA of ${requiredGPA.toFixed(2)} in the remaining courses, which exceeds the maximum of 4.0.`;
-      } else {
-        message = `✅ You need to average at least a GPA of ${requiredGPA.toFixed(2)} in the remaining ${remainingCredits} credits.`;
+      for (let option of gradeOptions.slice(0, 4)) { // only allow A+, A, B+, B
+        search([...combo, option.grade], sum + option.gpa, depth + 1);
       }
-
-      document.getElementById("output").innerText = message;
     }
-  </script>
 
+    search();
 
+    if (results.length === 0) {
+      outputDiv.innerHTML += `<p>⚠️ No valid combinations found with A+, A, B+, or B grades only.</p>`;
+    } else {
+      outputDiv.innerHTML += `<h3>🧮 Possible Grade Allocations:</h3>`;
+      results.forEach((combo, i) => {
+        let list = Object.entries(combo).map(([k, v]) => `${v} × ${k}`).join(", ");
+        outputDiv.innerHTML += `<div class="combo">Option ${i + 1}: ${list}</div>`;
+      });
+    }
+  }
+</script>
 
 </body>
 </html>
