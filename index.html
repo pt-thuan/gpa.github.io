@@ -5,25 +5,31 @@
   <title>GPA Calculator</title>
   <style>
     body {
-      background-color: #f0f4f8;
+      background-color: #f9fbfc;
       font-family: Arial, sans-serif;
-      color: #333;
-      max-width: 600px;
+      color: #222;
+      max-width: 700px;
       margin: auto;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
+      font-size: 14px;
     }
+
     h1 {
       color: #2d6a4f;
+      font-size: 20px;
     }
+
     input, button {
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
+      padding: 8px;
+      margin: 6px 0;
       border-radius: 6px;
       border: 1px solid #ccc;
+      font-size: 14px;
     }
+
     button {
       background-color: #2d6a4f;
       color: white;
@@ -31,32 +37,53 @@
       cursor: pointer;
       border: none;
     }
+
     button:hover {
       background-color: #40916c;
     }
+
     .result {
-      margin-top: 20px;
+      margin-top: 16px;
+      font-size: 13.5px;
+      line-height: 1.4;
+    }
+
+    .result strong {
+      color: #1d3557;
+    }
+
+    .result-title {
       font-weight: bold;
-      white-space: pre-line;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .option-list {
+      margin-left: 20px;
+      padding-left: 0;
+    }
+
+    .option-list li {
+      margin-bottom: 6px;
     }
   </style>
 </head>
 <body>
 
-  <h1>🎓 GPA Calculator</h1>
+  <h1>GPA Calculator</h1>
 
-  <p>Enter your current GPA, completed and remaining credits, and expected GPA. We'll calculate the required GPA and suggest possible grade combinations to achieve it.</p>
+  <p>Enter your GPA info and we will help you plan how to reach your goal.</p>
 
-  <label for="completedGPA">Your current GPA:</label>
+  <label for="completedGPA">Current GPA:</label>
   <input type="number" id="completedGPA" placeholder="e.g. 3.2" step="0.01">
 
-  <label for="completedCredits">Credits completed:</label>
+  <label for="completedCredits">Completed credits:</label>
   <input type="number" id="completedCredits" placeholder="e.g. 80">
 
   <label for="remainingCredits">Remaining credits:</label>
   <input type="number" id="remainingCredits" placeholder="e.g. 40">
 
-  <label for="targetGPA">Expected GPA:</label>
+  <label for="targetGPA">Target GPA:</label>
   <input type="number" id="targetGPA" placeholder="e.g. 3.5" step="0.01">
 
   <button onclick="calculate()">Calculate</button>
@@ -72,7 +99,7 @@
       const output = document.getElementById("output");
 
       if (isNaN(completedGPA) || isNaN(completedCredits) || isNaN(remainingCredits) || isNaN(targetGPA)) {
-        output.innerText = "❗ Please fill in all fields with valid numbers.";
+        output.innerHTML = "<span style='color:red;'>❗ Please fill in all fields with valid numbers.</span>";
         return;
       }
 
@@ -83,21 +110,11 @@
       const requiredGPA = requiredPoints / remainingCredits;
 
       if (requiredGPA > 4.0) {
-        output.innerText = `❌ It’s not possible to reach a GPA of ${targetGPA.toFixed(2)}. You would need a GPA of ${requiredGPA.toFixed(2)}, which exceeds the max of 4.0.`;
+        output.innerHTML = `<strong>❌ Not achievable.</strong> Required GPA of ${requiredGPA.toFixed(2)} exceeds 4.0.`;
         return;
       }
 
-      let result = `🧽 You need to average at least GPA ${requiredGPA.toFixed(2)} in the remaining ${remainingCredits} credits.\n\n🌟 Minimum Grade Allocations to Achieve Your Goal (by credits):\n`;
-
-      const gradeMap = {
-        "A+": 4.0,
-        "A": 3.7,
-        "B+": 3.3,
-        "B": 3.0,
-        "C+": 2.5,
-        "C": 2.0,
-        "D+": 1.5
-      };
+      const gradeMap = { "A+": 4.0, "A": 3.7, "B+": 3.3, "B": 3.0, "C+": 2.3, "C": 2.0, "D+": 1.3, "D": 1.0 };
       const grades = Object.keys(gradeMap);
       let combinations = [];
 
@@ -109,63 +126,4 @@
             totalPoints += gradeMap[grade] * currentCombo[grade];
             totalCreditsUsed += currentCombo[grade];
           }
-          const avg = totalPoints / totalCreditsUsed;
-          if (Math.abs(avg - requiredGPA) <= 0.05) {
-            combinations.push({ avg, count: { ...currentCombo } });
-          }
-          return;
-        }
-
-        if (index >= grades.length) return;
-
-        const grade = grades[index];
-        for (let i = 0; i <= remaining; i += 1) {
-  if (i !== 0 && i < 3) continue; // bỏ qua tổ hợp < 3 tín chỉ
-
-          currentCombo[grade] = i;
-          findCombos(remaining - i, currentCombo, index + 1);
-        }
-        delete currentCombo[grade];
-      }
-
-      findCombos(remainingCredits);
-      combinations.sort((a, b) => a.avg - b.avg);
-
-      const top5 = combinations.slice(0, 5);
-      if (top5.length === 0) {
-        result += `⚠ No feasible combinations found with common grades.`;
-      } else {
-        top5.forEach((combo, i) => {
-          let line = `Option ${i + 1}: `;
-          const entries = Object.entries(combo.count)
-            .filter(([_, c]) => c > 0)
-            .map(([grade, credits]) => `${credits} credits of grade ${grade}`);
-          line += entries.join(", ");
-          result += line + "\n";
-        });
-      }
-
-      ooutput.innerHTML = `
-  <div style="font-size: 14px; line-height: 1.3; background-color: #f9f9f9; border: 1px solid #ccc; padding: 14px; border-radius: 8px;">
-    <p style="margin: 0 0 6px 0;"><strong>You need to average at least GPA <span style="color: #0077b6">${requiredGPA.toFixed(2)}</span> in the remaining <span style="color: #0077b6">${remainingCredits}</span> credits.</strong></p>
-    
-    <p style="margin: 8px 0 6px 0;"><strong>Minimum Grade Allocations to Achieve Your Goal (by credits):</strong></p>
-    
-    <ol style="padding-left: 18px; margin: 6px 0 0 0;">
-      ${
-        top5.map((combo, i) => {
-          const items = Object.entries(combo.count)
-            .filter(([_, c]) => c > 0)
-            .map(([grade, credits]) => `<span style="color:#1d3557">${credits}</span> credits of grade <strong>${grade}</strong>`);
-          return `<li style="margin-bottom: 4px;"><strong>Option ${i + 1}:</strong> ${items.join(", ")}</li>`;
-        }).join("")
-      }
-    </ol>
-  </div>
-`;
-
-    }
-  </script>
-
-</body>
-</html>
+          const avg = totalPoints / totalCredits
