@@ -119,7 +119,9 @@
         if (index >= grades.length) return;
 
         const grade = grades[index];
-        for (let i = 0; i <= remaining; i++) {
+        for (let i = 0; i <= remaining; i += 1) {
+  if (i !== 0 && i < 3) continue; // bỏ qua tổ hợp < 3 tín chỉ
+
           currentCombo[grade] = i;
           findCombos(remaining - i, currentCombo, index + 1);
         }
