@@ -89,7 +89,15 @@
 
       let result = `🧽 You need to average at least GPA ${requiredGPA.toFixed(2)} in the remaining ${remainingCredits} credits.\n\n🌟 Minimum Grade Allocations to Achieve Your Goal (by credits):\n`;
 
-      const gradeMap = { "A+": 4.0, "A": 3.7, "B+": 3.3, "B": 3.0 };
+      const gradeMap = {
+        "A+": 4.0,
+        "A": 3.7,
+        "B+": 3.3,
+        "B": 3.0,
+        "C+": 2.5,
+        "C": 2.0,
+        "D+": 1.5
+      };
       const grades = Object.keys(gradeMap);
       let combinations = [];
 
