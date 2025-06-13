@@ -143,7 +143,20 @@
         });
       }
 
-      output.innerText = result;
+      output.innerHTML = `
+  <p>🍊 <strong>You need to average at least GPA <span style="color: #0077b6">${requiredGPA.toFixed(2)}</span> in the remaining <span style="color: #0077b6">${remainingCredits}</span> credits.</strong></p>
+  <p>🌟 <strong>Minimum Grade Allocations to Achieve Your Goal (by credits):</strong></p>
+  <ol style="padding-left: 20px; line-height: 1.6;">
+    ${
+      top5.map((combo, i) => {
+        const items = Object.entries(combo.count)
+          .filter(([_, c]) => c > 0)
+          .map(([grade, credits]) => `<span style="color:#1d3557">${credits}</span> credits of grade <strong>${grade}</strong>`);
+        return `<li><strong>Option ${i + 1}:</strong> ${items.join(", ")}</li>`;
+      }).join("")
+    }
+  </ol>
+`;
     }
   </script>
 
