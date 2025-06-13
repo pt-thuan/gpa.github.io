@@ -1,95 +1,167 @@
-function calculate() {
-  const completedGPA = parseFloat(document.getElementById("completedGPA").value);
-  const completedCredits = parseFloat(document.getElementById("completedCredits").value);
-  const remainingCredits = parseFloat(document.getElementById("remainingCredits").value);
-  const targetGPA = parseFloat(document.getElementById("targetGPA").value);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GPA Calculator</title>
+  <style>
+    body {
+      background-color: #f0f4f8;
+      font-family: Arial, sans-serif;
+      color: #333;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2d6a4f;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #2d6a4f;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background-color: #40916c;
+    }
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
 
-  const outputDiv = document.getElementById("output");
+  <h1>🎓 GPA Calculator</h1>
 
-  if (
-    isNaN(completedGPA) ||
-    isNaN(completedCredits) ||
-    isNaN(remainingCredits) ||
-    isNaN(targetGPA)
-  ) {
-    outputDiv.innerHTML = "❗ Please fill in all fields with valid numbers.";
-    return;
-  }
+  <p>Enter your current GPA, completed credits, remaining credits, and expected GPA. The tool will tell you what GPA you need and suggest grade allocations (by credits) if possible.</p>
 
-  const totalCredits = completedCredits + remainingCredits;
-  const totalRequiredPoints = targetGPA * totalCredits;
-  const currentPoints = completedGPA * completedCredits;
-  const requiredPoints = totalRequiredPoints - currentPoints;
-  const requiredGPA = requiredPoints / remainingCredits;
+  <label for="completedGPA">Your current GPA:</label>
+  <input type="number" id="completedGPA" placeholder="e.g. 3.2" step="0.01">
 
-  let message = `✅ You need to average at least GPA ${requiredGPA.toFixed(2)} in the remaining ${remainingCredits} credits.<br><br>`;
+  <label for="completedCredits">Credits completed:</label>
+  <input type="number" id="completedCredits" placeholder="e.g. 80">
 
-  const grades = [
-    { name: "A+", value: 4.0 },
-    { name: "A", value: 3.7 },
-    { name: "B+", value: 3.5 },
-    { name: "B", value: 3.0 },
-    { name: "C+", value: 2.5 },
-    { name: "C", value: 2.0 },
-    { name: "D+", value: 1.5 },
-    { name: "D", value: 1.0 }
-  ];
+  <label for="remainingCredits">Remaining credits:</label>
+  <input type="number" id="remainingCredits" placeholder="e.g. 36">
 
-  const maxSubjects = Math.floor(remainingCredits / 3);
-  const creditRemainder = remainingCredits % 3;
+  <label for="targetGPA">Expected GPA:</label>
+  <input type="number" id="targetGPA" placeholder="e.g. 3.5" step="0.01">
 
-  if (creditRemainder !== 0) {
-    message += "⚠️ Grade allocation options are not available as remaining credits are not divisible by 3.";
-    outputDiv.innerHTML = message;
-    return;
-  }
+  <button onclick="calculate()">Calculate Required GPA</button>
 
-  // Generate combinations of credits per grade
-  const combinations = [];
-  function findCombos(index, usedSubjects, usedCredits, usedPoints, combo) {
-    if (usedCredits === remainingCredits) {
-      const gpa = usedPoints / remainingCredits;
-      if (gpa >= requiredGPA - 0.01) {
-        combinations.push([...combo]);
+  <div class="result" id="output"></div>
+
+  <script>
+    function calculate() {
+      const completedGPA = parseFloat(document.getElementById("completedGPA").value);
+      const completedCredits = parseFloat(document.getElementById("completedCredits").value);
+      const remainingCredits = parseFloat(document.getElementById("remainingCredits").value);
+      const targetGPA = parseFloat(document.getElementById("targetGPA").value);
+
+      const outputDiv = document.getElementById("output");
+
+      if (
+        isNaN(completedGPA) ||
+        isNaN(completedCredits) ||
+        isNaN(remainingCredits) ||
+        isNaN(targetGPA)
+      ) {
+        outputDiv.innerHTML = "❗ Please fill in all fields with valid numbers.";
+        return;
       }
-      return;
+
+      const totalCredits = completedCredits + remainingCredits;
+      const totalRequiredPoints = targetGPA * totalCredits;
+      const currentPoints = completedGPA * completedCredits;
+      const requiredPoints = totalRequiredPoints - currentPoints;
+      const requiredGPA = requiredPoints / remainingCredits;
+
+      let message = `✅ You need to average at least GPA ${requiredGPA.toFixed(2)} in the remaining ${remainingCredits} credits.<br><br>`;
+
+      const grades = [
+        { name: "A+", value: 4.0 },
+        { name: "A", value: 3.7 },
+        { name: "B+", value: 3.5 },
+        { name: "B", value: 3.0 },
+        { name: "C+", value: 2.5 },
+        { name: "C", value: 2.0 },
+        { name: "D+", value: 1.5 },
+        { name: "D", value: 1.0 }
+      ];
+
+      const maxSubjects = Math.floor(remainingCredits / 3);
+      const creditRemainder = remainingCredits % 3;
+
+      if (creditRemainder !== 0) {
+        message += "⚠️ Grade allocation options are not available as remaining credits are not divisible by 3.";
+        outputDiv.innerHTML = message;
+        return;
+      }
+
+      const combinations = [];
+      function findCombos(index, usedCredits, usedPoints, combo) {
+        if (usedCredits === remainingCredits) {
+          const gpa = usedPoints / remainingCredits;
+          if (gpa >= requiredGPA - 0.01) {
+            combinations.push([...combo]);
+          }
+          return;
+        }
+        if (index >= grades.length || usedCredits > remainingCredits) return;
+
+        const maxPossibleUnits = (remainingCredits - usedCredits) / 3;
+        for (let count = 0; count <= maxPossibleUnits; count++) {
+          combo.push({ grade: grades[index].name, credits: count * 3 });
+          findCombos(
+            index + 1,
+            usedCredits + count * 3,
+            usedPoints + count * 3 * grades[index].value,
+            combo
+          );
+          combo.pop();
+        }
+      }
+
+      findCombos(0, 0, 0, []);
+
+      combinations.sort((a, b) => {
+        const score = (combo) =>
+          combo.reduce((sum, g) => sum + g.credits * grades.find(gr => gr.name === g.grade).value, 0);
+        return score(a) - score(b);
+      });
+
+      if (combinations.length === 0) {
+        message += "⚠️ No feasible combinations found with common grades.";
+      } else {
+        message += "🎯 <b>Possible Grade Allocations (by credits):</b><br>";
+        combinations.slice(0, 5).forEach((combo, idx) => {
+          const comboText = combo
+            .filter(g => g.credits > 0)
+            .map(g => `${g.credits} credits of grade ${g.grade}`)
+            .join(", ");
+          message += `Option ${idx + 1}: ${comboText}<br>`;
+        });
+      }
+
+      outputDiv.innerHTML = message;
     }
-    if (index >= grades.length || usedCredits > remainingCredits) return;
+  </script>
 
-    const maxPossibleSubjects = (remainingCredits - usedCredits) / 3;
-    for (let count = 0; count <= maxPossibleSubjects; count++) {
-      combo.push({ grade: grades[index].name, credits: count * 3 });
-      findCombos(
-        index + 1,
-        usedSubjects + count,
-        usedCredits + count * 3,
-        usedPoints + count * 3 * grades[index].value,
-        combo
-      );
-      combo.pop();
-    }
-  }
-
-  findCombos(0, 0, 0, 0, []);
-
-  combinations.sort((a, b) => {
-    const score = (combo) =>
-      combo.reduce((sum, g) => sum + g.credits * grades.find(gr => gr.name === g.grade).value, 0);
-    return score(a) - score(b);
-  });
-
-  if (combinations.length === 0) {
-    message += "⚠️ No feasible combinations found with common grades.";
-  } else {
-    message += "🎯 <b>Possible Grade Allocations (by credits):</b><br>";
-    combinations.slice(0, 5).forEach((combo, idx) => {
-      const comboText = combo
-        .filter(g => g.credits > 0)
-        .map(g => `${g.credits} credits of grade ${g.grade}`)
-        .join(", ");
-      message += `Option ${idx + 1}: ${comboText}<br>`;
-    });
-  }
-
-  outputDiv.innerHTML = message;
-}
+</body>
+</html>
