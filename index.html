@@ -5,26 +5,33 @@
   <title>GPA Calculator</title>
   <style>
     body {
-      background-color: #f9fbfc;
+      background-color: #f9f9f9;
       font-family: Arial, sans-serif;
       color: #222;
       max-width: 700px;
       margin: auto;
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.08);
       font-size: 14px;
+      line-height: 1.4;
     }
 
     h1 {
       color: #2d6a4f;
-      font-size: 20px;
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
     }
 
     input, button {
       width: 100%;
       padding: 8px;
-      margin: 6px 0;
+      margin-top: 4px;
+      margin-bottom: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 14px;
@@ -43,36 +50,42 @@
     }
 
     .result {
-      margin-top: 16px;
-      font-size: 13.5px;
-      line-height: 1.4;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
     }
 
-    .result strong {
-      color: #1d3557;
-    }
-
-    .result-title {
+    .result h2 {
+      margin: 10px 0 5px;
+      font-size: 15px;
       font-weight: bold;
-      margin-top: 10px;
+    }
+
+    .result ul {
+      padding-left: 18px;
+      margin: 8px 0;
+    }
+
+    .result li {
       margin-bottom: 4px;
     }
 
-    .option-list {
-      margin-left: 20px;
-      padding-left: 0;
+    strong {
+      color: #000;
     }
 
-    .option-list li {
-      margin-bottom: 6px;
+    .highlight {
+      color: #1d3557;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
   <h1>GPA Calculator</h1>
-
-  <p>Enter your GPA info and we will help you plan how to reach your goal.</p>
 
   <label for="completedGPA">Current GPA:</label>
   <input type="number" id="completedGPA" placeholder="e.g. 3.2" step="0.01">
@@ -99,7 +112,7 @@
       const output = document.getElementById("output");
 
       if (isNaN(completedGPA) || isNaN(completedCredits) || isNaN(remainingCredits) || isNaN(targetGPA)) {
-        output.innerHTML = "<span style='color:red;'>❗ Please fill in all fields with valid numbers.</span>";
+        output.innerHTML = "<span style='color:red;'>Please fill in all fields with valid numbers.</span>";
         return;
       }
 
@@ -110,20 +123,71 @@
       const requiredGPA = requiredPoints / remainingCredits;
 
       if (requiredGPA > 4.0) {
-        output.innerHTML = `<strong>❌ Not achievable.</strong> Required GPA of ${requiredGPA.toFixed(2)} exceeds 4.0.`;
+        output.innerHTML = `<strong style="color:red;">Impossible:</strong> You would need a GPA of <strong>${requiredGPA.toFixed(2)}</strong>, which exceeds the 4.0 scale.`;
         return;
       }
 
-      const gradeMap = { "A+": 4.0, "A": 3.7, "B+": 3.3, "B": 3.0, "C+": 2.3, "C": 2.0, "D+": 1.3, "D": 1.0 };
+      const gradeMap = {
+        "A+": 4.0,
+        "A": 3.7,
+        "B+": 3.3,
+        "B": 3.0,
+        "C+": 2.7,
+        "C": 2.3,
+        "D+": 2.0
+      };
       const grades = Object.keys(gradeMap);
-      let combinations = [];
+      const combinations = [];
 
       function findCombos(remaining, currentCombo = {}, index = 0) {
-        if (remaining <= 0) {
+        if (remaining === 0) {
           let totalPoints = 0;
-          let totalCreditsUsed = 0;
+          let totalCredits = 0;
           for (const grade in currentCombo) {
             totalPoints += gradeMap[grade] * currentCombo[grade];
-            totalCreditsUsed += currentCombo[grade];
+            totalCredits += currentCombo[grade];
           }
-          const avg = totalPoints / totalCredits
+          const avg = totalPoints / totalCredits;
+          if (Math.abs(avg - requiredGPA) <= 0.05) {
+            combinations.push({ avg, count: { ...currentCombo } });
+          }
+          return;
+        }
+
+        if (index >= grades.length) return;
+
+        const grade = grades[index];
+        for (let i = 0; i <= remaining; i++) {
+          if (i !== 0 && i < 3) continue; // Chỉ chấp nhận từ 3 tín trở lên
+          currentCombo[grade] = i;
+          findCombos(remaining - i, currentCombo, index + 1);
+        }
+        delete currentCombo[grade];
+      }
+
+      findCombos(remainingCredits);
+      combinations.sort((a, b) => a.avg - b.avg);
+      const top = combinations.slice(0, 5);
+
+      let html = `<p><strong>You need to average at least GPA <span class="highlight">${requiredGPA.toFixed(2)}</span> in the remaining <span class="highlight">${remainingCredits}</span> credits.</strong></p>`;
+      html += `<h2>Minimum Grade Allocations to Achieve Your Goal (by credits):</h2>`;
+
+      if (top.length === 0) {
+        html += `<p>No suitable combinations found using common grades (each ≥ 3 credits).</p>`;
+      } else {
+        html += `<ul>`;
+        top.forEach((combo, idx) => {
+          const items = Object.entries(combo.count)
+            .filter(([_, c]) => c >= 3)
+            .map(([grade, credits]) => `${credits} credits of grade ${grade}`);
+          html += `<li><strong>Option ${idx + 1}:</strong> ${items.join(", ")}</li>`;
+        });
+        html += `</ul>`;
+      }
+
+      output.innerHTML = html;
+    }
+  </script>
+
+</body>
+</html>
